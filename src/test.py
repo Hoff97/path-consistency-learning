@@ -9,11 +9,9 @@ import gym
 
 from util.replay_buffer import ReplayBuffer
 
-
+from util.rl_board import RLBoard
 
 mse = nn.MSELoss()
-
-gym.spaces
 
 def exec_policy(env, policy, seq_len):
     states = torch.zeros(seq_len+1, env.observation_space.shape[0])
@@ -87,6 +85,8 @@ def main():
 
     buffer = ReplayBuffer()
 
+    board = RLBoard()
+
     for i in range(its):
         states, actions, rewards, done, lens = exec_policy_batch(env, policy, seq_len, batch_size)
 
@@ -116,10 +116,16 @@ def main():
         optim_p.step()
         optim_v.step()
 
-        avg_len = torch.mean(lens.float())
-        avg_reward = torch.mean(torch.sum(rewards, dim=1))
+        board.log(i, rewards, l, lens)
 
-        print(f'[{i+1}/{its}] Loss: {l.item()}, Rewards: {avg_reward.item()}, Len: {avg_len.item()}')
+        if i%100 == 0:
+            print('Saving models')
+            save_models(policy, value)
+
+
+def save_models(policy, value):
+    torch.save(policy.state_dict(), 'policy.pth')
+    torch.save(value.state_dict(), 'value.pth')
 
 def consistency_loss(consistency):
     return mse(consistency, torch.zeros_like(consistency))
