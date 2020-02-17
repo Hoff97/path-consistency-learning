@@ -29,7 +29,7 @@ might need a few runs to get good results.
 A very simple model for the cartpole environment is provided
 under res/models/cart_pole.
 
-U can see it acting by running:
+You can see it acting by running:
 ```
 $ python test_model.py
 ```
