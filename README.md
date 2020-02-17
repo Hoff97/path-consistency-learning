@@ -21,6 +21,9 @@ tensorboard, which can be viewed with
 $ tensorboard --logdir=runs
 ```
 
+Currently the implementation depends on initialization a lot, so you
+might need a few runs to get good results.
+
 # Results
 
 A very simple model for the cartpole environment is provided
@@ -33,3 +36,10 @@ $ python test_model.py
 ![Reward over time](./res/models/cart_pole/reward.png "Reward over time")
 ![Gym Cart Pole](./res/models/cart_pole/test.gif "Reward over time")
 
+# Todo:
+
+- [ ] Add unified PCL
+- [ ] Test on more complex environments
+- [ ] Use epsilon-greedy strategy in the beginning to force exploration
+- [ ] Implement prioritized replay buffer as described in the paper
+- [ ] Test how expert trajectories improve convergence speed
