@@ -1,19 +1,17 @@
+import random
+
 import gym
-from models.policy import FFPolicy
-from models.value import FFValue
 import torch
 import torch.nn as nn
 import torch.optim as optim
-
-import gym
-
+from models.policy import FFPolicy
+from models.value import FFValue
 from util.replay_buffer import ReplayBuffer
-
 from util.rl_board import RLBoard
 
 mse = nn.MSELoss()
 
-def exec_policy(env, policy, seq_len):
+def exec_policy(env, policy, seq_len, epsilon):
     states = torch.zeros(seq_len+1, env.observation_space.shape[0])
     actions = torch.zeros(seq_len, dtype=torch.long)
     rewards = torch.zeros(seq_len)
@@ -26,11 +24,14 @@ def exec_policy(env, policy, seq_len):
     for i in range(seq_len):
         states[i] = torch.tensor(observation)
 
-        act = policy(states[i].reshape((1,-1)))
-
-        action = torch.argmax(act)
+        action = None
+        if random.random() > epsilon:
+            act = policy(states[i].reshape((1,-1)))
+            action = torch.argmax(act).item()
+        else:
+            action = env.action_space.sample()
         actions[i] = action
-        observation, reward, d, info = env.step(action.item())
+        observation, reward, d, info = env.step(action)
 
         rewards[i] = reward
         done[i] = d
@@ -43,7 +44,7 @@ def exec_policy(env, policy, seq_len):
     return states, actions, rewards, done, total_len
 
 
-def exec_policy_batch(env, policy, seq_len, batches):
+def exec_policy_batch(env, policy, seq_len, batches, epsilon):
     states = torch.zeros(batches, seq_len+1, env.observation_space.shape[0])
     actions = torch.zeros(batches, seq_len, dtype=torch.long)
     rewards = torch.zeros(batches, seq_len)
@@ -51,7 +52,7 @@ def exec_policy_batch(env, policy, seq_len, batches):
     lens = torch.zeros(batches, dtype=torch.long)
 
     for i in range(batches):
-        s, a, r, d, l = exec_policy(env, policy, seq_len)
+        s, a, r, d, l = exec_policy(env, policy, seq_len, epsilon)
         states[i] = s
         actions[i] = a
         rewards[i] = r
@@ -70,6 +71,7 @@ def main():
     seq_len = 200
     lamb = 1
     tau = 1
+    epsilon = 1
 
     device = 'cpu'
 
@@ -83,12 +85,12 @@ def main():
     optim_p = optim.Adam(policy.parameters())
     optim_v = optim.Adam(value.parameters())
 
-    buffer = ReplayBuffer()
+    buffer = ReplayBuffer(capacity=100)
 
     board = RLBoard()
 
     for i in range(its):
-        states, actions, rewards, done, lens = exec_policy_batch(env, policy, seq_len, batch_size)
+        states, actions, rewards, done, lens = exec_policy_batch(env, policy, seq_len, batch_size, epsilon)
 
         sequence = (states, actions, rewards, done, lens)
 
@@ -116,11 +118,13 @@ def main():
         optim_p.step()
         optim_v.step()
 
-        board.log(i, rewards, l, lens)
+        board.log(i, rewards, l, lens, epsilon)
 
         if i%100 == 0:
             print('Saving models')
             save_models(policy, value)
+
+        epsilon = epsilon*0.99
 
 
 def save_models(policy, value):
