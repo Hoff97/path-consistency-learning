@@ -27,6 +27,8 @@ def exec_policy(env, policy):
         if d:
             observation = env.reset()
 
+        time.sleep(0.05)
+
 
 def main():
     env = gym.make('CartPole-v0')
