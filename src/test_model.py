@@ -1,14 +1,12 @@
+import time
+
 import gym
-from models.policy import FFPolicy
-from models.value import FFValue
 import torch
 import torch.nn as nn
 import torch.optim as optim
-
-import gym
-
+from models.policy import FFPolicy
+from models.value import FFValue
 from util.replay_buffer import ReplayBuffer
-
 from util.rl_board import RLBoard
 
 mse = nn.MSELoss()
@@ -37,7 +35,7 @@ def main():
     inp = env.observation_space.shape[0]
 
     policy = FFPolicy(input_size=inp, actions=actions)
-    policy.load_state_dict(torch.load('policy.pth'))
+    policy.load_state_dict(torch.load('res/models/cart_pole/policy.pth'))
     policy = policy.eval()
 
     exec_policy(env, policy)
